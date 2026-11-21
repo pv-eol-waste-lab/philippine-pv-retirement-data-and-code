@@ -1,0 +1,26 @@
+from analysis import *
+def run():
+    fig,ax=plt.subplots(1,2,figsize=(8.4,3.1),layout='constrained')
+    age=np.arange(0,46)
+    for weight,shape,label in [(.7,5.3759,'Wear-out'),(.2,3.5,'Early loss')]:
+        dist=1-np.exp(-(age*gamma(1+1/shape)/(.95*25))**shape)
+        ax[0].plot(age[1:],weight*np.diff(dist),label=label)
+    ax[0].step(age,.1/6*((age>=15)&(age<=20)),where='mid',label='Repowering')
+    ax[0].set(xlabel='Module age (years)',ylabel='Weighted annual retirement fraction',title='a   Luzon central assumptions');ax[0].legend(frameon=False,fontsize=7)
+    vin=plants.groupby('year').mw.sum();pipe=np.arange(2027,2030)
+    ax[1].plot(np.arange(2004,2030),mass(np.arange(2004,2030)),c='#396378')
+    ax[1].scatter(vin.index,mass(vin.index),s=vin/13+2,c='#166859');ax[1].scatter(pipe,mass(pipe),s=capacity.sum()/3/13+2,c='#bd7549',alpha=.6)
+    ax[1].axhline(76,ls=':',c='.4');ax[1].set(xlabel='Installation year',ylabel='Module mass (t/MWdc)',title='b   Installation-year conversion')
+    savefig(fig,'Retirement-model')
+    fig,ax=plt.subplots(1,2,figsize=(8.4,3.1),layout='constrained')
+    grid=np.linspace(0,1,51);cs=costs(2050).mean(1)
+    def islandwidth(r):
+        def fill(ix):return cs[ix]@np.minimum(capacity[ix],np.maximum(0,r*capacity.sum()-np.r_[0,capacity[ix].cumsum()[:-1]]))
+        return fill((-cs).argsort())-fill(cs.argsort())
+    for a in ax:a.grid(axis='y',alpha=.15);a.set_ylabel('Range width (thousand t)')
+    ax[0].plot(100*grid,[np.ptp(envelope(2050,r))/1000 for r in grid],label='National calendar');ax[0].plot(100*grid,[islandwidth(r)/1000 for r in grid],'--',label='Island calendars')
+    ax[0].set(xlabel='Pipeline built (%)',title='a   Through 2050');ax[0].legend(frameon=False,fontsize=7)
+    hv=np.arange(2030,2076);ax[1].plot(hv,[np.ptp(envelope(h,1))/1000 for h in hv],c='#166859')
+    ax[1].set(xlabel='Reporting year',title='b   Full build, national calendar')
+    savefig(fig,'Calendar-envelopes')
+if __name__=='__main__':run()
